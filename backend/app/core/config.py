@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: str
+    database_connect_timeout_seconds: int = 5
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
