@@ -5,9 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Real environment variables override .env files.
-    model_config = SettingsConfigDict(
-        env_file=("../.env", ".env"), extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=("../.env", ".env"), extra="ignore")
 
     environment: str = "development"
     log_level: str = "INFO"
