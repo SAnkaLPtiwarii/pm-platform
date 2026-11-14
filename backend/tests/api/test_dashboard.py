@@ -28,7 +28,7 @@ def test_dashboard_counts_only_my_projects_and_tasks(client, make_user, team):
         "pending_tasks": 1,
     }
     assert stats(client, team.alice) == expected
-    assert stats(client, team.bob) == expected  # members see the same project
+    assert stats(client, team.bob) == expected  # members see the same project totals
 
 
 def test_non_members_see_empty_statistics(client, team):
