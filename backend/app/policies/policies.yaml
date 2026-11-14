@@ -1,0 +1,68 @@
+# Policy-Based Access Control (PBAC).
+# Each policy says: for <action>, ALLOW (default) or DENY if <conditions> hold.
+# Evaluation: any matching deny wins; otherwise any matching allow grants;
+# otherwise the request is denied (default deny).
+#
+# Conditions are named checks implemented in app/policies/conditions.py.
+# They can be combined with all / any / not.
+version: 1
+
+policies:
+  - id: project-create
+    action: project:create
+    description: Any authenticated user can create a project.
+    conditions: is_authenticated
+
+  - id: project-view
+    action: project:view
+    description: A user can only view projects they are a member of.
+    conditions: is_project_member
+
+  - id: project-update
+    action: project:update
+    description: Only the project owner can update project details.
+    conditions: is_project_owner
+
+  - id: project-delete
+    action: project:delete
+    description: Only the project owner can delete a project.
+    conditions: is_project_owner
+
+  - id: project-manage-members
+    action: project:manage_members
+    description: Only the project owner can add or remove members.
+    conditions: is_project_owner
+
+  - id: task-create
+    action: task:create
+    description: Only project members can create tasks.
+    conditions: is_project_member
+
+  - id: task-view
+    action: task:view
+    description: Only project members can view tasks.
+    conditions: is_project_member
+
+  - id: task-update
+    action: task:update
+    description: A task can be updated by its creator or its assignee.
+    conditions:
+      any:
+        - is_task_creator
+        - is_task_assignee
+
+  - id: task-delete
+    action: task:delete
+    description: A task can be deleted only while Todo, and only by the project owner.
+    conditions:
+      all:
+        - is_project_owner
+        - task_status_is: todo
+
+  - id: task-complete
+    action: task:complete
+    description: A task can be completed only if it has an assignee and all required info.
+    conditions:
+      all:
+        - has_assignee
+        - required_fields_present: [title, description, due_date, priority]

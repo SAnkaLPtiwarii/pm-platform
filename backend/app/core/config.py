@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
 
     cors_origins: str = "http://localhost:5173"
+        policy_file: str = ""  # empty = use the bundled app/policies/policies.yaml
 
     @property
     def cors_origin_list(self) -> list[str]:
