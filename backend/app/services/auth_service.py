@@ -19,6 +19,7 @@ from app.models.user import User
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import TokenResponse
+from app.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class AuthService:
         self.db = db
         self.users = UserRepository(db)
         self.tokens = RefreshTokenRepository(db)
+        self.audit = AuditService(db)
 
     def register(self, email: str, name: str, password: str) -> User:
         if self.users.get_by_email(email):
@@ -39,6 +41,7 @@ class AuthService:
         user = User(email=email, name=name, password_hash=hash_password(password))
         try:
             self.users.add(user)
+            self.audit.record(user.id, "user.registered", "user", user.id)
             self.db.commit()
         except IntegrityError as exc:  # two simultaneous registrations
             self.db.rollback()
@@ -55,6 +58,7 @@ class AuthService:
         if not verify_password(password, user.password_hash):
             raise UnauthorizedError(INVALID_CREDENTIALS)
 
+        self.audit.record(user.id, "user.logged_in", "user", user.id)
         logger.info("User logged in: %s", user.id)
         return self._issue_tokens(user)
 
@@ -76,6 +80,7 @@ class AuthService:
         record = self.tokens.get_by_hash(hash_refresh_token(raw_refresh_token))
         if record is not None and record.revoked_at is None:
             record.revoked_at = datetime.now(UTC)
+            self.audit.record(record.user_id, "user.logged_out", "user", record.user_id)
             self.db.commit()
             logger.info("User logged out: %s", record.user_id)
 

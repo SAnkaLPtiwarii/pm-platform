@@ -20,6 +20,7 @@ from app.schemas.task import (
     TaskUpdate,
     UserSummary,
 )
+from app.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class TaskService:
         self.db = db
         self.tasks = TaskRepository(db)
         self.projects = ProjectRepository(db)
+        self.audit = AuditService(db)
 
     def create(self, user: User, project_id: uuid.UUID, payload: TaskCreate) -> TaskResponse:
         project = self._get_visible_project(user, project_id)
@@ -49,6 +51,9 @@ class TaskService:
             created_by_id=user.id,
         )
         self.tasks.add(task)
+        self.audit.record(
+            user.id, "task.created", "task", task.id, project.id, {"title": task.title}
+        )
         self.db.commit()
         logger.info("Task created: %s in project %s by %s", task.id, project.id, user.id)
         return self._response(user, self._reload(task.id))
@@ -98,8 +103,13 @@ class TaskService:
         if changes.get("status", task.status) == TaskStatus.COMPLETED:
             authorize(user, "task:complete", task, changes=changes)
 
+        old_status = task.status
         for name, value in changes.items():
             setattr(task, name, value)
+        detail = {"fields": sorted(changes)}
+        if "status" in changes and changes["status"] != old_status:
+            detail["status"] = {"from": old_status.value, "to": changes["status"].value}
+        self.audit.record(user.id, "task.updated", "task", task.id, task.project_id, detail)
         self.db.commit()
         logger.info("Task updated: %s by %s fields=%s", task.id, user.id, sorted(changes))
         return self._response(user, self._reload(task.id))
@@ -107,6 +117,9 @@ class TaskService:
     def delete(self, user: User, task_id: uuid.UUID) -> None:
         task = self._get_visible(user, task_id)
         authorize(user, "task:delete", task)
+        self.audit.record(
+            user.id, "task.deleted", "task", task.id, task.project_id, {"title": task.title}
+        )
         self.tasks.delete(task)
         self.db.commit()
         logger.info("Task deleted: %s by %s", task_id, user.id)

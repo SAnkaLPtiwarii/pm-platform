@@ -20,6 +20,7 @@ from app.schemas.project import (
     ProjectResponse,
     ProjectUpdate,
 )
+from app.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class ProjectService:
         self.db = db
         self.projects = ProjectRepository(db)
         self.users = UserRepository(db)
+        self.audit = AuditService(db)
 
     # --- projects ----------------------------------------------------------------
 
@@ -40,6 +42,9 @@ class ProjectService:
         # The owner is also a member, so "my projects" is a single membership lookup.
         project.members.append(ProjectMember(user_id=user.id))
         self.projects.add(project)
+        self.audit.record(
+            user.id, "project.created", "project", project.id, project.id, {"name": project.name}
+        )
         self.db.commit()
         logger.info("Project created: %s by %s", project.id, user.id)
         return self._response(user, project, ProjectCounts(members=1))
@@ -81,6 +86,14 @@ class ProjectService:
         authorize(user, "project:update", project)
         for field_name in payload.model_fields_set:
             setattr(project, field_name, getattr(payload, field_name))
+        self.audit.record(
+            user.id,
+            "project.updated",
+            "project",
+            project.id,
+            project.id,
+            {"fields": sorted(payload.model_fields_set)},
+        )
         self.db.commit()
         logger.info("Project updated: %s by %s", project.id, user.id)
         return self._response(user, project, self._counts(project.id))
@@ -88,6 +101,14 @@ class ProjectService:
     def delete(self, user: User, project_id: uuid.UUID) -> None:
         project = self._get_visible(user, project_id)
         authorize(user, "project:delete", project)
+        self.audit.record(
+            user.id,
+            "project.deleted",
+            "project",
+            project.id,
+            project.id,
+            {"name": project.name},
+        )
         self.projects.delete(project)  # tasks and memberships are removed by cascade
         self.db.commit()
         logger.info("Project deleted: %s by %s", project_id, user.id)
@@ -119,6 +140,14 @@ class ProjectService:
 
         try:
             member = self.projects.add_member(project.id, target.id)
+            self.audit.record(
+                user.id,
+                "member.added",
+                "project",
+                project.id,
+                project.id,
+                {"user_id": str(target.id)},
+            )
             self.db.commit()
         except IntegrityError as exc:  # two simultaneous adds
             self.db.rollback()
@@ -155,6 +184,10 @@ class ProjectService:
         )
 
     # --- helpers -----------------------------------------------------------------
+    def activity(self, user: User, project_id: uuid.UUID, params: PageParams):
+        """The project's activity timeline, newest first (visible to members only)."""
+        project = self._get_visible(user, project_id)
+        return self.audit.list_project_activity(project.id, params)
 
     def _get_visible(self, user: User, project_id: uuid.UUID) -> Project:
         """Load a project the user may see. Missing and hidden both look like 404."""

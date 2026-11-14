@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUser, DbSession, Pagination
 from app.models.enums import ProjectStatus
+from app.schemas.activity import ActivityResponse
 from app.schemas.common import Page
 from app.schemas.project import (
     MemberAdd,
@@ -68,3 +69,10 @@ def remove_member(
     project_id: uuid.UUID, user_id: uuid.UUID, db: DbSession, current_user: CurrentUser
 ) -> None:
     ProjectService(db).remove_member(current_user, project_id, user_id)
+
+
+@router.get("/{project_id}/activity", response_model=Page[ActivityResponse])
+def project_activity(
+    project_id: uuid.UUID, db: DbSession, current_user: CurrentUser, pagination: Pagination
+):
+    return ProjectService(db).activity(current_user, project_id, pagination)
