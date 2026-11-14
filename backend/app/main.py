@@ -3,12 +3,13 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.policies import get_policy_engine
+
 from app.api.router import api_router
 from app.api.routers import health
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
+from app.policies import get_policy_engine
 
 logger = logging.getLogger("app.request")
 
@@ -16,12 +17,14 @@ logger = logging.getLogger("app.request")
 def create_app() -> FastAPI:
     settings = get_settings()
     setup_logging(settings.log_level)
-        get_policy_engine()  # fail fast at startup if the policy file is invalid
+    get_policy_engine()  # fail fast at startup if the policy file is invalid
 
     app = FastAPI(
         title="Project Management Platform API",
         version="1.0.0",
-        description="Lightweight Jira/Trello-style API with JWT auth and policy-based access control.",
+        description=(
+            "Lightweight Jira/Trello-style API with JWT auth and policy-based access control."
+        ),
     )
 
     app.add_middleware(
