@@ -15,6 +15,7 @@ from app.policies import (
     load_policy_file,
     parse_policy_set,
 )
+from app.policies import can as policy_can
 
 EXPECTED_ACTIONS = {
     "project:create",
@@ -322,6 +323,21 @@ def test_invalid_yaml_is_rejected(tmp_path: Path):
 def test_missing_policy_file_is_rejected(tmp_path: Path):
     with pytest.raises(PolicyConfigError):
         load_policy_file(tmp_path / "does-not-exist.yaml")
+
+        def test_can_is_a_non_raising_check(world):
+    assert policy_can(world.alice, "project:delete", world.project) is True
+    assert policy_can(world.bob, "project:delete", world.project) is False
+
+
+def test_authorize_uses_a_custom_message(world):
+    with pytest.raises(NotFoundError, match="Project not found"):
+        authorize(
+            world.dave,
+            "project:view",
+            world.project,
+            on_deny=NotFoundError,
+            message="Project not found",
+        )
 
 
 # --- the authorize() entry point ----------------------------------------------------

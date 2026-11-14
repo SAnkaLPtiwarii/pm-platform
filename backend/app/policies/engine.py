@@ -82,6 +82,17 @@ def get_policy_engine() -> PolicyEngine:
     return engine
 
 
+def can(
+    user: Any,
+    action: str,
+    resource: Any,
+    *,
+    changes: Mapping[str, Any] | None = None,
+) -> bool:
+    """Non-raising check, used for UI hints such as the `permissions` block."""
+    return get_policy_engine().evaluate(user, action, resource, changes).allowed
+
+
 def authorize(
     user: Any,
     action: str,
@@ -89,6 +100,7 @@ def authorize(
     *,
     changes: Mapping[str, Any] | None = None,
     on_deny: type[AppError] = ForbiddenError,
+    message: str | None = None,
 ) -> Decision:
     """The single authorization entry point: raises `on_deny` unless a policy allows it.
 
@@ -105,5 +117,5 @@ def authorize(
     )
     if not decision.allowed:
         details = {"action": action} if on_deny is ForbiddenError else None
-        raise on_deny(details=details)
+        raise on_deny(message, details=details)
     return decision
