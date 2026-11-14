@@ -324,7 +324,8 @@ def test_missing_policy_file_is_rejected(tmp_path: Path):
     with pytest.raises(PolicyConfigError):
         load_policy_file(tmp_path / "does-not-exist.yaml")
 
-        def test_can_is_a_non_raising_check(world):
+
+def test_can_is_a_non_raising_check(world):
     assert policy_can(world.alice, "project:delete", world.project) is True
     assert policy_can(world.bob, "project:delete", world.project) is False
 

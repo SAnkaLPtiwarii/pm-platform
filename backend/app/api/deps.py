@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
+from app.schemas.common import PageParams
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -35,3 +36,13 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_pagination(
+    page: Annotated[int, Query(ge=1, description="Page number, starting at 1")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 20,
+) -> PageParams:
+    return PageParams(page=page, page_size=page_size)
+
+
+Pagination = Annotated[PageParams, Depends(get_pagination)]

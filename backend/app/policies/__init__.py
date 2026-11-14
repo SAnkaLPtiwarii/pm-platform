@@ -19,19 +19,3 @@ __all__ = [
     "load_policy_file",
     "parse_policy_set",
 ]
-
-
-def test_can_is_a_non_raising_check(world):
-    assert policy_can(world.alice, "project:delete", world.project) is True
-    assert policy_can(world.bob, "project:delete", world.project) is False
-
-
-def test_authorize_uses_a_custom_message(world):
-    with pytest.raises(NotFoundError, match="Project not found"):
-        authorize(
-            world.dave,
-            "project:view",
-            world.project,
-            on_deny=NotFoundError,
-            message="Project not found",
-        )
