@@ -58,7 +58,7 @@ export function Button({
 }
 
 const baseField =
-  'w-full rounded-md border bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-500'
+  'box-border block w-full min-w-0 max-w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:bg-slate-100 disabled:text-slate-500'
 const fieldClass = (invalid: boolean) => `${baseField} ${invalid ? 'border-red-400' : 'border-slate-300'}`
 
 interface FieldProps {
@@ -68,7 +68,7 @@ interface FieldProps {
 
 function FieldShell({ label, htmlFor, error, children }: FieldProps & { htmlFor?: string; children: ReactNode }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label htmlFor={htmlFor} className="mb-1 block text-sm font-medium text-slate-700">
         {label}
       </label>
@@ -122,15 +122,25 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
     const inputId = id ?? rest.name
     return (
       <FieldShell label={label} htmlFor={inputId} error={error}>
-        <select
-          ref={ref}
-          id={inputId}
-          aria-invalid={error ? true : undefined}
-          className={`${fieldClass(!!error)} ${className}`}
-          {...rest}
-        >
-          {children}
-        </select>
+        <div className="relative min-w-0">
+          <select
+            ref={ref}
+            id={inputId}
+            aria-invalid={error ? true : undefined}
+            className={`${fieldClass(!!error)} appearance-none truncate pr-10 ${className}`}
+            {...rest}
+          >
+            {children}
+          </select>
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        </div>
       </FieldShell>
     )
   },
