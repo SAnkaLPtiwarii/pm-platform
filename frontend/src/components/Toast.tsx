@@ -39,17 +39,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="fixed bottom-4 right-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2"
+        className="fixed right-4 top-4 z-[100] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 sm:right-6 sm:top-6"
       >
         {items.map((item) => (
           <div
             key={item.id}
             role={item.kind === 'error' ? 'alert' : 'status'}
-            className={`rounded-lg px-4 py-3 text-sm text-white shadow-lg ${
-              item.kind === 'error' ? 'bg-red-600' : 'bg-green-600'
+            className={`toast-enter flex items-center gap-3 rounded-xl border border-l-4 bg-white px-4 py-3 text-sm text-slate-800 shadow-lg ${
+              item.kind === 'error'
+                ? 'border-red-100 border-l-red-600'
+                : 'border-indigo-100 border-l-indigo-700'
             }`}
           >
-            {item.message}
+            <span
+              aria-hidden="true"
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+                item.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700'
+              }`}
+            >
+              {item.kind === 'error' ? (
+                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <circle cx="10" cy="10" r="7.5" />
+                  <path d="M10 6.5v4m0 3h.01" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="m4 10 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            <span>{item.message}</span>
           </div>
         ))}
       </div>

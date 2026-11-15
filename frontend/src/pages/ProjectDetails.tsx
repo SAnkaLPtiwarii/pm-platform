@@ -13,6 +13,7 @@ type Tab = 'tasks' | 'members' | 'activity' | 'settings'
 export default function ProjectDetails() {
   const { projectId = '' } = useParams()
   const [tab, setTab] = useState<Tab>('tasks')
+  const [tabDirection, setTabDirection] = useState<'forward' | 'backward'>('forward')
   const query = useQuery({ queryKey: ['project', projectId], queryFn: () => api.project(projectId) })
 
   if (query.isPending) return <PageSpinner label="Loading project..." />
@@ -40,6 +41,13 @@ export default function ProjectDetails() {
   ]
   if (project.permissions.update || project.permissions.delete) tabs.push({ id: 'settings', label: 'Settings' })
 
+  function changeTab(nextTab: Tab) {
+    const currentIndex = tabs.findIndex((item) => item.id === tab)
+    const nextIndex = tabs.findIndex((item) => item.id === nextTab)
+    if (currentIndex !== nextIndex) setTabDirection(nextIndex > currentIndex ? 'forward' : 'backward')
+    setTab(nextTab)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -62,8 +70,8 @@ export default function ProjectDetails() {
             key={item.id}
             type="button"
             aria-current={tab === item.id ? 'page' : undefined}
-            onClick={() => setTab(item.id)}
-            className={`whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium ${
+            onClick={() => changeTab(item.id)}
+            className={`whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors duration-200 motion-reduce:transition-none ${
               tab === item.id
                 ? 'border-indigo-600 text-indigo-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -74,10 +82,12 @@ export default function ProjectDetails() {
         ))}
       </div>
 
-      {tab === 'tasks' && <TasksPanel project={project} />}
-      {tab === 'members' && <MembersPanel project={project} />}
-      {tab === 'activity' && <ActivityPanel projectId={project.id} />}
-      {tab === 'settings' && <SettingsPanel project={project} />}
+      <div key={tab} className={`tab-transition-${tabDirection}`}>
+        {tab === 'tasks' && <TasksPanel project={project} />}
+        {tab === 'members' && <MembersPanel project={project} />}
+        {tab === 'activity' && <ActivityPanel projectId={project.id} />}
+        {tab === 'settings' && <SettingsPanel project={project} />}
+      </div>
     </div>
   )
 }

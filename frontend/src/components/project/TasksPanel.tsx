@@ -2,16 +2,36 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../../lib/api'
-import { useDebounced } from '../../lib/hooks'
 import { PRIORITIES, PRIORITY_LABEL, STATUSES, STATUS_LABEL, formatDate } from '../../lib/format'
+import { useDebounced } from '../../lib/hooks'
 import type { Project, Task, TaskPriority, TaskStatus } from '../../lib/types'
 import { useToast } from '../Toast'
-import { Button, EmptyState, ErrorState, Input, PageSpinner, Pagination, PriorityBadge, Select } from '../ui'
+import {
+  Button,
+  Chips,
+  EmptyState,
+  ErrorState,
+  Input,
+  PageSpinner,
+  Pagination,
+  PriorityBadge,
+  Segmented,
+} from '../ui'
 import TaskBoard from './TaskBoard'
 import TaskCreateForm from './TaskCreateForm'
 
 const LIST_PAGE_SIZE = 10
 const BOARD_LIMIT = 100
+
+const STATUS_FILTERS: { value: TaskStatus | ''; label: string }[] = [
+  { value: '', label: 'All' },
+  ...STATUSES.map((value) => ({ value, label: STATUS_LABEL[value] })),
+]
+const PRIORITY_FILTERS: { value: TaskPriority | ''; label: string }[] = [
+  { value: '', label: 'Any' },
+  ...PRIORITIES.map((value) => ({ value, label: PRIORITY_LABEL[value] })),
+]
+const STATUS_OPTIONS = STATUSES.map((value) => ({ value, label: STATUS_LABEL[value] }))
 
 export default function TasksPanel({ project }: { project: Project }) {
   const queryClient = useQueryClient()
@@ -47,32 +67,31 @@ export default function TasksPanel({ project }: { project: Project }) {
     },
     onError: (err) => toast.error(errorMessage(err)),
   })
+  const pendingId = move.isPending ? (move.variables?.task.id ?? null) : null
 
   const filtered = debouncedSearch !== '' || priority !== '' || (isList && status !== '')
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-md border border-slate-300 bg-white p-0.5 text-sm">
-          {(['list', 'board'] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setView(value)}
-              className={`rounded px-3 py-1.5 font-medium capitalize ${
-                view === value ? 'bg-indigo-600 text-white' : 'text-slate-600'
-              }`}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-        <Button onClick={() => setShowForm((open) => !open)}>{showForm ? 'Close' : 'New task'}</Button>
+        <Segmented
+          label="View"
+          value={view}
+          onChange={setView}
+          className="w-full sm:w-48"
+          options={[
+            { value: 'list', label: 'List' },
+            { value: 'board', label: 'Board' },
+          ]}
+        />
+        <Button className="w-full sm:w-auto" onClick={() => setShowForm((open) => !open)}>
+          {showForm ? 'Close' : 'New task'}
+        </Button>
       </div>
 
       {showForm && <TaskCreateForm projectId={project.id} onDone={() => setShowForm(false)} />}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="space-y-3">
         <Input
           label="Search"
           name="task-search"
@@ -84,39 +103,25 @@ export default function TasksPanel({ project }: { project: Project }) {
           }}
         />
         {isList && (
-          <Select
+          <Chips
             label="Status"
-            name="task-status"
             value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as TaskStatus | '')
+            options={STATUS_FILTERS}
+            onChange={(value) => {
+              setStatus(value)
               setPage(1)
             }}
-          >
-            <option value="">All</option>
-            {STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {STATUS_LABEL[value]}
-              </option>
-            ))}
-          </Select>
+          />
         )}
-        <Select
+        <Chips
           label="Priority"
-          name="task-priority"
           value={priority}
-          onChange={(event) => {
-            setPriority(event.target.value as TaskPriority | '')
+          options={PRIORITY_FILTERS}
+          onChange={(value) => {
+            setPriority(value)
             setPage(1)
           }}
-        >
-          <option value="">All</option>
-          {PRIORITIES.map((value) => (
-            <option key={value} value={value}>
-              {PRIORITY_LABEL[value]}
-            </option>
-          ))}
-        </Select>
+        />
       </div>
 
       {query.isPending ? (
@@ -130,32 +135,35 @@ export default function TasksPanel({ project }: { project: Project }) {
         />
       ) : isList ? (
         <>
-          <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-slate-200 border border-slate-200 bg-white">
             {query.data.items.map((task) => (
-              <li key={task.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <li
+                key={task.id}
+                className={`flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
+                  task.id === pendingId ? 'opacity-60' : ''
+                }`}
+              >
                 <div className="min-w-0">
-                  <Link to={`/tasks/${task.id}`} className="font-medium text-slate-900 hover:text-indigo-600">
+                  <Link
+                    to={`/tasks/${task.id}`}
+                    className="break-words font-medium text-slate-900 underline-offset-2 hover:underline"
+                  >
                     {task.title}
                   </Link>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                     <PriorityBadge priority={task.priority} />
                     <span>{task.assignee?.name ?? 'Unassigned'}</span>
                     {task.due_date && <span>Due {formatDate(task.due_date)}</span>}
                   </div>
                 </div>
-                <select
-                  aria-label={`Status of ${task.title}`}
+                <Segmented
+                  label={`Status of ${task.title}`}
                   value={task.status}
+                  options={STATUS_OPTIONS}
                   disabled={!task.permissions.update || move.isPending}
-                  onChange={(event) => move.mutate({ task, next: event.target.value as TaskStatus })}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm disabled:bg-slate-100"
-                >
-                  {STATUSES.map((value) => (
-                    <option key={value} value={value}>
-                      {STATUS_LABEL[value]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(next) => move.mutate({ task, next })}
+                  className="sm:w-72 sm:shrink-0"
+                />
               </li>
             ))}
           </ul>
@@ -163,12 +171,9 @@ export default function TasksPanel({ project }: { project: Project }) {
         </>
       ) : (
         <>
-          <p className="text-xs text-slate-500">Drag a card to another column to change its status.</p>
-          <TaskBoard
-            tasks={query.data.items}
-            onMove={(task, next) => move.mutate({ task, next })}
-            pendingId={move.isPending ? (move.variables?.task.id ?? null) : null}
-          />
+          <p className="hidden text-xs text-slate-500 md:block">Drag a card to another column to change its status.</p>
+          <p className="text-xs text-slate-500 md:hidden">Use the buttons on a card to move it to another column.</p>
+          <TaskBoard tasks={query.data.items} onMove={(task, next) => move.mutate({ task, next })} pendingId={pendingId} />
           {query.data.total > BOARD_LIMIT && (
             <p className="text-xs text-slate-500">
               Showing the first {BOARD_LIMIT} of {query.data.total} tasks. Use search or priority to narrow down.

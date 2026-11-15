@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast'
 import {
   Button,
   Card,
+  Chips,
   EmptyState,
   ErrorState,
   FormError,
@@ -15,7 +16,6 @@ import {
   PageSpinner,
   Pagination,
   ProjectStatusBadge,
-  Select,
   Textarea,
 } from '../components/ui'
 import { api, errorMessage } from '../lib/api'
@@ -23,6 +23,12 @@ import { useDebounced } from '../lib/hooks'
 import type { ProjectStatus } from '../lib/types'
 
 const PAGE_SIZE = 9
+
+const STATUS_FILTERS: { value: ProjectStatus | ''; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'archived', label: 'Archived' },
+]
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Project name is required').max(150, 'Name is too long'),
@@ -93,7 +99,7 @@ export default function Projects() {
         </Card>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-3">
         <Input
           label="Search"
           name="search"
@@ -104,19 +110,15 @@ export default function Projects() {
             setPage(1)
           }}
         />
-        <Select
+        <Chips
           label="Status"
-          name="status"
           value={status}
-          onChange={(event) => {
-            setStatus(event.target.value as ProjectStatus | '')
+          options={STATUS_FILTERS}
+          onChange={(value) => {
+            setStatus(value)
             setPage(1)
           }}
-        >
-          <option value="">All</option>
-          <option value="active">Active</option>
-          <option value="archived">Archived</option>
-        </Select>
+        />
       </div>
 
       {query.isPending ? (
@@ -130,12 +132,12 @@ export default function Projects() {
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {query.data.items.map((project) => (
               <Link key={project.id} to={`/projects/${project.id}`} className="block">
-                <Card className="h-full transition hover:border-indigo-300 hover:shadow">
+                <Card className="h-full hover:border-slate-400">
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-semibold text-slate-900">{project.name}</h2>
+                    <h2 className="break-words text-lg font-semibold text-slate-900">{project.name}</h2>
                     <ProjectStatusBadge status={project.status} />
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-500">{project.description ?? 'No description'}</p>

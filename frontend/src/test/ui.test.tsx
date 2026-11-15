@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { EmptyState, PriorityBadge, StatusBadge } from '../components/ui'
+import { EmptyState, Input, PriorityBadge, StatusBadge } from '../components/ui'
 
 describe('EmptyState', () => {
   it('shows the title, description and action', () => {
@@ -21,5 +22,21 @@ describe('badges', () => {
     )
     expect(screen.getByText('In Progress')).toBeInTheDocument()
     expect(screen.getByText('High')).toBeInTheDocument()
+  })
+})
+
+describe('password input', () => {
+  it('toggles visibility and keeps the entered value', async () => {
+    const user = userEvent.setup()
+    render(<Input label="Password" name="password" type="password" defaultValue="secret" />)
+
+    const password = screen.getByLabelText('Password')
+    expect(password).toHaveAttribute('type', 'password')
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(password).toHaveAttribute('type', 'text')
+    expect(password).toHaveValue('secret')
+
+    await user.click(screen.getByRole('button', { name: 'Hide password' }))
+    expect(password).toHaveAttribute('type', 'password')
   })
 })

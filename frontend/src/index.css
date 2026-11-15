@@ -1,8 +1,142 @@
 @import "tailwindcss";
 
+/*
+  Colour system: warm paper neutrals and one deep-green accent.
+  The slate-* and indigo-* classes used across the app are remapped here, so every page
+  picks the palette up without touching its markup.
+*/
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+
+  --color-slate-50: #faf8f4;
+  --color-slate-100: #f1ede4;
+  --color-slate-200: #e4dfd3;
+  --color-slate-300: #d2ccbd;
+  --color-slate-400: #a8a190;
+  --color-slate-500: #7a7466;
+  --color-slate-600: #5c574b;
+  --color-slate-700: #44403a;
+  --color-slate-800: #2e2b26;
+  --color-slate-900: #1d1b18;
+
+  --color-indigo-50: #eef5f1;
+  --color-indigo-100: #d9e8df;
+  --color-indigo-200: #b6d2c2;
+  --color-indigo-300: #8ab5a0;
+  --color-indigo-400: #5a947a;
+  --color-indigo-500: #3a775d;
+  --color-indigo-600: #2a6350;
+  --color-indigo-700: #22503f;
+  --color-indigo-800: #1b3f33;
+  --color-indigo-900: #142e25;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.route-transition {
+  animation: surface-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tab-transition-forward {
+  animation: tab-enter-forward 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tab-transition-backward {
+  animation: tab-enter-backward 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tab-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes tab-enter-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-transition,
+  .toast-enter,
+  .tab-transition-forward,
+  .tab-transition-backward {
+    animation: none;
+  }
+}
+
+/* No 300 ms tap delay and no double-tap zoom on controls. */
+a,
+button,
+[role="button"],
+[role="radio"] {
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the whole page when a field with a font size under 16px gets focus,
+   which looks like the layout "breaking" on phones. Keep fields at 16px on small screens. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-indigo-600);
+  outline-offset: 2px;
 }
